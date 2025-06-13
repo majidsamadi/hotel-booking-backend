@@ -1,0 +1,15 @@
+[
+  {
+    "id": "0415de74-f999-4512-af03-53bb0df76a1c",
+    "user_id": "309dba9b-9cd6-4342-ba6a-c65e6daf3b70",
+    "room_id": "cf6cf918-c2ed-4e07-b7ff-5295b699bd11",
+    "from_date": "2025-10-12",
+    "to_date": "2025-10-14",
+    "is_user_main_guest": true,
+    "guest_name": "Majid",
+    "guest_family_name": "Khan",
+    "guest_id_number": "S1234567D",
+    "guest_phone": "+6591234567",
+    "status": "confirmed"
+  }
+]

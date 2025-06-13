@@ -1,0 +1,20 @@
+[
+  {
+    "email": "majid@example.com",
+    "first_name": "Majid",
+    "last_name": "Khan",
+    "phone": "+6591234567",
+    "id_number": "S1234567D",
+    "id": "309dba9b-9cd6-4342-ba6a-c65e6daf3b70",
+    "hashed_password": "$2b$12$1L4oxFRKpe0HDYjOdT.uK.RVlkI3h4mpMcwLI.I7loPHh6AJA6xg2"
+  },
+  {
+    "email": "majid.samadi@hotmail.com",
+    "id": "fae71f53-8a7c-4be7-acec-e14ab903a0fc",
+    "first_name": "MAJID",
+    "last_name": "SAMADIKUCHAKSARAEE",
+    "phone": "0126807565",
+    "id_number": "I96965131",
+    "hashed_password": "$2b$12$gEEzccyMlZ8qUaoNidejAOussEFvRJ29oDBM8ayL9qdp/fCkC5IxC"
+  }
+]
