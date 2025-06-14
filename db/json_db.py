@@ -38,12 +38,11 @@ def save_users(users):
 
 def save_user(user):
     users = load_users()
-    user_dict = user.model_dump()
+    user_dict = user.model_dump() if hasattr(user, "model_dump") else dict(user)
     user_dict["id"] = str(uuid4())
     users.append(user_dict)
     save_users(users)
     return user_dict
-
 
 
 def find_user_by_email(email):
@@ -80,6 +79,12 @@ def load_bookings():
 
 def save_booking(booking):
     bookings = load_bookings()
-    booking["id"] = str(uuid4())
-    bookings.append(booking)
+    booking_dict = booking if isinstance(booking, dict) else booking.model_dump()
+    booking_dict["id"] = str(uuid4())
+    bookings.append(booking_dict)
+    write_json("bookings.json", bookings)
+
+
+def save_bookings_list(bookings):
+    # Overwrite entire bookings list
     write_json("bookings.json", bookings)

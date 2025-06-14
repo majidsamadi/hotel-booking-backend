@@ -1,79 +1,80 @@
 ###### ---------------hotel_booking/routes/search.py
 
 from fastapi import APIRouter, Query
-from datetime import date
-from hotel_booking.db.json_db import load_hotels, load_rooms, load_availability
+from datetime import date, timedelta
+from typing import Optional
 import difflib
+from hotel_booking.db.json_db import load_hotels, load_rooms, load_availability
 
 router = APIRouter()
 
 @router.get("/search")
 def search_hotels(
     q: str = "",
+    guests: int = Query(1, ge=1, description="Number of guests"),
+    from_date: Optional[date] = Query(None, description="Check-in date (YYYY-MM-DD)"),
+    to_date: Optional[date] = Query(None, description="Check-out date (YYYY-MM-DD)"),
     sort_by: str = Query("price_asc", enum=["price_asc", "price_desc", "alpha"]),
-    page: int = 1,
-    per_page: int = 10,
-    from_date: date | None = None,
-    to_date: date | None = None,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1)
 ):
     hotels = load_hotels()
     rooms = load_rooms()
     availability = load_availability()
 
-    # Filter only if search query is provided
+    # Filter if search query provided
     if q:
         q_lower = q.lower()
-        matched_hotels = []
+        filtered = []
         for hotel in hotels:
             name = hotel.get("name", "").lower()
             city = hotel.get("city", "").lower()
             address = hotel.get("address", "").lower()
             landmark = hotel.get("landmark", "").lower()
-
-            if q_lower in name or q_lower in city or q_lower in address or q_lower in landmark:
-                matched_hotels.append(hotel)
+            if q_lower in (name + city + address + landmark):
+                filtered.append(hotel)
                 continue
-
-            fields = [name, city, address, landmark]
-            for field in fields:
+            for field in [name, city, address, landmark]:
                 if difflib.get_close_matches(q_lower, [field], n=1, cutoff=0.6):
-                    matched_hotels.append(hotel)
+                    filtered.append(hotel)
                     break
-        hotels = matched_hotels
+        hotels = filtered
 
-    # Attach one available room with lowest price
     results = []
     for hotel in hotels:
-        hotel_rooms = [room for room in rooms if room["hotel_id"] == hotel["id"]]
+        # rooms matching hotel and guest capacity
+        hotel_rooms = [r for r in rooms if r["hotel_id"] == hotel["id"] and r.get("capacity", 0) >= guests]
         available_rooms = []
         for room in hotel_rooms:
             if from_date and to_date:
-                is_available = True
                 current = from_date
+                ok = True
                 while current < to_date:
                     if availability.get(room["id"], {}).get(current.isoformat()) is False:
-                        is_available = False
+                        ok = False
                         break
-                    current = current.replace(day=current.day + 1)
-                if is_available:
+                    current += timedelta(days=1)
+                if ok:
                     available_rooms.append(room)
             else:
                 available_rooms.append(room)
+        if not available_rooms:
+            continue
+        cheapest = min(available_rooms, key=lambda r: r.get("price_per_night", 0))
+        entry = hotel.copy()
+        entry["room"] = cheapest
+        entry["price"] = cheapest.get("price_per_night", 0)
+        results.append(entry)
 
-        if available_rooms:
-            cheapest_room = min(available_rooms, key=lambda r: r["price_per_night"])
-            hotel_copy = hotel.copy()
-            hotel_copy["room"] = cheapest_room
-            hotel_copy["price"] = cheapest_room["price_per_night"]
-            results.append(hotel_copy)
-
+    # Sorting
     if sort_by == "price_asc":
-        results.sort(key=lambda h: h["price"])
+        results.sort(key=lambda x: x.get("price", 0))
     elif sort_by == "price_desc":
-        results.sort(key=lambda h: h["price"], reverse=True)
+        results.sort(key=lambda x: x.get("price", 0), reverse=True)
     elif sort_by == "alpha":
-        results.sort(key=lambda h: h["name"].lower())
+        results.sort(key=lambda x: x.get("name", "").lower())
 
+    # Pagination
     start = (page - 1) * per_page
     end = start + per_page
     return results[start:end]
